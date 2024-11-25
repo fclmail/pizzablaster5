@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Shooter Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 1px solid #ffffff;
+        }
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        button {
+            background-color: white;
+            color: black;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <div class="controls">
+        <button id="leftBtn">Left</button>
+        <button id="shootBtn">Shoot</button>
+        <button id="rightBtn">Right</button>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let playerX = canvas.width / 2 - 20;
+        const playerWidth = 40;
+        const playerHeight = 20;
+        const lasers = [];
+        const targets = [];
+        let score = 0;
+        const targetWidth = 30;
+        const targetHeight = 30;
+        let gameOver = false;
+
+        // Add touch buttons functionality
+        document.getElementById('leftBtn').addEventListener('click', () => {
+            if (playerX > 0) playerX -= 20;
+        });
+        document.getElementById('rightBtn').addEventListener('click', () => {
+            if (playerX < canvas.width - playerWidth) playerX += 20;
+        });
+        document.getElementById('shootBtn').addEventListener('click', shootLaser);
+
+        // Keyboard controls
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft' && playerX > 0) {
+                playerX -= 20;
+            }
+            if (event.key === 'ArrowRight' && playerX < canvas.width - playerWidth) {
+                playerX += 20;
+            }
+            if (event.key === ' ') {
+                shootLaser();
+            }
+            if (gameOver && event.key === ' ') {
+                resetGame();
+            }
+        });
+
+        function shootLaser() {
+            const laser = {
+                x: playerX + playerWidth / 2 - 2,
+                y: canvas.height - playerHeight - 10,
+            };
+            lasers.push(laser);
+        }
+
+        function createTarget() {
+            const targetX = Math.random() * (canvas.width - targetWidth);
+            targets.push({ x: targetX, y: 0 });
+        }
+
+        function resetGame() {
+            score = 0;
+            gameOver = false;
+            lasers.length = 0;
+            targets.length = 0;
+            startGame();
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlayer();
+            drawLasers();
+            drawTargets();
+            drawScore();
+            if (!gameOver) {
+                updateLasers();
+                updateTargets();
+                checkCollisions();
+            }
+            if (score >= 5) {
+                gameOver = true;
+                ctx.fillStyle = 'white';
+                ctx.font = '24px Arial';
+                ctx.fillText('Congratulations! You Win!', 150, canvas.height / 2);
+            } else if (gameOver) {
+                ctx.fillStyle = 'white';
+                ctx.font = '24px Arial';
+                ctx.fillText('Press Space or Tap Shoot to Try Again!', 120, canvas.height / 2 + 30);
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        function drawPlayer() {
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(playerX, canvas.height - playerHeight, playerWidth, playerHeight);
+        }
+
+        function drawLasers() {
+            ctx.font = '20px Arial';
+            lasers.forEach(laser => {
+                ctx.fillText('💥', laser.x, laser.y);
+            });
+        }
+
+        function drawTargets() {
+            ctx.font = '20px Arial';
+            targets.forEach(target => {
+                ctx.fillText('🍕', target.x, target.y);
+            });
+        }
+
+        function drawScore() {
+            ctx.fillStyle = 'white';
+            ctx.font = '16px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 20);
+        }
+
+        function updateLasers() {
+            for (let i = lasers.length - 1; i >= 0; i--) {
+                lasers[i].y -= 5;
+                if (lasers[i].y < 0) {
+                    lasers.splice(i, 1);
+                }
+            }
+        }
+
+        function updateTargets() {
+            if (Math.random() < 0.02) {
+                createTarget();
+            }
+            for (let i = targets.length - 1; i >= 0; i--) {
+                targets[i].y += 2;
+                if (targets[i].y > canvas.height) {
+                    targets.splice(i, 1);
+                }
+            }
+        }
+
+        function checkCollisions() {
+            for (let i = lasers.length - 1; i >= 0; i--) {
+                for (let j = targets.length - 1; j >= 0; j--) {
+                    if (lasers[i].x < targets[j].x + targetWidth &&
+                        lasers[i].x + 4 > targets[j].x &&
+                        lasers[i].y < targets[j].y + targetHeight &&
+                        lasers[i].y + 10 > targets[j].y) {
+                        lasers.splice(i, 1);
+                        targets.splice(j, 1);
+                        score++;
+                        break;
+                    }
+                }
+            }
+        }
+
+        function startGame() {
+            gameOver = false;
+            score = 0;
+            targets.length = 0;
+            lasers.length = 0;
+            gameLoop();
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
